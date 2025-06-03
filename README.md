@@ -2,9 +2,9 @@
 
 ## Rustlings Progress
 
-**Currently working on:** `vecs2`
+**Currently working on:** `structs1`
 
-**24 of 94 completed (25.5%)**
+**30 of 94 completed (31.9%)**
 
 ## 📋 Exercise Completion Table
 
@@ -33,12 +33,12 @@
 | `primitive_types5` | ✅ |
 | `primitive_types6` | ✅ |
 | `vecs1` | ✅ |
-| `vecs2` | ❌ |
-| `move_semantics1` | ❌ |
-| `move_semantics2` | ❌ |
-| `move_semantics3` | ❌ |
-| `move_semantics4` | ❌ |
-| `move_semantics5` | ❌ |
+| `vecs2` | ✅ |
+| `move_semantics1` | ✅ |
+| `move_semantics2` | ✅ |
+| `move_semantics3` | ✅ |
+| `move_semantics4` | ✅ |
+| `move_semantics5` | ✅ |
 | `structs1` | ❌ |
 | `structs2` | ❌ |
 | `structs3` | ❌ |
