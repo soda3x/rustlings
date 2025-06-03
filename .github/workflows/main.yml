@@ -40,9 +40,10 @@ jobs:
           CURRENT="${{ steps.progress.outputs.current }}"
           COMPLETED="${{ steps.progress.outputs.completed }}"
 
-          echo "# Rustlings Progress" > README.md
+          echo "# 🦀" > README.md
+          echo "## Rustlings Progress" >> README.md
           echo "" >> README.md
-          echo "**Currently working on:** \`$CURRENT\`" >> README.md
+          echo "**Currently working on:** $CURRENT" >> README.md
           echo "" >> README.md
           echo "## Completed Exercises" >> README.md
           echo "" >> README.md
