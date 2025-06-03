@@ -41,8 +41,13 @@ jobs:
           done < <(find exercises -type f -name '*.rs' -print0 | sort -z)
 
           # Calculate progress
-          TOTAL=${#EXERCISES[@]}
-          DONE=0
+          declare -i TOTAL=${#EXERCISES[@]}
+          declare -i DONE=0
+
+          if (( TOTAL == 0 )); then
+            echo "No exercises found in exercises/*.rs. Check directory structure."
+            exit 1
+          fi
 
           # First, mark completed and count
           COMPLETION_TABLE=()
@@ -50,7 +55,7 @@ jobs:
           for ex in "${EXERCISES[@]}"; do
             if grep -Fxq "$ex" .completed.txt; then
               COMPLETION_TABLE+=("| \`$ex\` | ✅ |")
-              ((DONE++))
+              DONE=$((DONE + 1))
             else
               COMPLETION_TABLE+=("| \`$ex\` | ❌ |")
             fi
