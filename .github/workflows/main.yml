@@ -30,19 +30,36 @@ jobs:
           # Completed exercises from state file
           tail -n +5 .rustlings-state.txt | sort | uniq > .completed.txt
 
-          # All exercises from rs files
-          find exercises -type f -name '*.rs' | sed 's|.*/||' | sed 's|\.rs$||' | sort | uniq > .all.txt
+          # Get all exercises in order by directory and file
+          EXERCISES=()
+          while IFS= read -r -d '' file; do
+            name=$(basename "$file" .rs)
+            EXERCISES+=("$name")
+          done < <(find exercises -type f -name '*.rs' -print0 | sort -z)
 
-          # Count totals
-          TOTAL=$(wc -l < .all.txt)
-          DONE=$(grep -Fx -f .completed.txt .all.txt | wc -l)
-          PERCENT=$(awk "BEGIN { printf \"%.1f\", ($DONE/$TOTAL)*100 }")
+          # Calculate progress
+          TOTAL=${#EXERCISES[@]}
+          DONE=0
 
-          echo "# 🦀" >> README.md
+          echo "# 🦀" > README.md
           echo "## Rustlings Progress" >> README.md
           echo "" >> README.md
           echo "**Currently working on:** \`$CURRENT\`" >> README.md
           echo "" >> README.md
+
+          # First, mark completed and count
+          COMPLETION_TABLE=""
+          for ex in "${EXERCISES[@]}"; do
+            if grep -Fxq "$ex" .completed.txt; then
+              COMPLETION_TABLE+="| \`$ex\` | ✅ |\n"
+              ((DONE++))
+            else
+              COMPLETION_TABLE+="| \`$ex\` | ❌ |\n"
+            fi
+          done
+
+          PERCENT=$(awk "BEGIN { printf \"%.1f\", ($DONE/$TOTAL)*100 }")
+
           echo "**$DONE of $TOTAL completed ($PERCENT%)**" >> README.md
           echo "" >> README.md
 
@@ -50,14 +67,7 @@ jobs:
           echo "" >> README.md
           echo "| Exercise Name | Completion |" >> README.md
           echo "|---------------|------------|" >> README.md
-
-          while read -r EX; do
-            if grep -Fxq "$EX" .completed.txt; then
-              echo "| \`$EX\` | ✅ |" >> README.md
-            else
-              echo "| \`$EX\` | ❌ |" >> README.md
-            fi
-          done < .all.txt
+          echo -e "$COMPLETION_TABLE" >> README.md
 
       - name: Commit and Push if Changed
         run: |
