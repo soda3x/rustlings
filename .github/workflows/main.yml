@@ -53,7 +53,7 @@ jobs:
 
           echo "$COMPLETED" | while read -r name; do
             [ -z "$name" ] && continue
-            echo "- \`$name\`" >> README.md
+            echo "- $name ✅" >> README.md
           done
 
       - name: Commit and Push if Changed
