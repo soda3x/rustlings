@@ -1,0 +1,68 @@
+name: Update Rustlings Progress in README
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  update-readme:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Extract Rustlings progress from .rustlings-state.txt
+        id: progress
+        run: |
+          if [ ! -f .rustlings-state.txt ]; then
+            echo "No .rustlings-state.txt found"
+            echo "current=None" >> $GITHUB_OUTPUT
+            echo "completed=" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Read completed exercises
+          COMPLETED=$(grep -E '^[^:]+:true' .rustlings-state.txt | cut -d ':' -f1 | sort)
+          CURRENT=$(grep -E '^[^:]+:false' .rustlings-state.txt | cut -d ':' -f1 | head -n 1 || echo "All done!")
+
+          echo "Completed exercises:"
+          echo "$COMPLETED"
+          echo "Current: $CURRENT"
+
+          echo "completed<<EOF" >> $GITHUB_OUTPUT
+          echo "$COMPLETED" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+          echo "current=$CURRENT" >> $GITHUB_OUTPUT
+
+      - name: Update README
+        run: |
+          CURRENT="${{ steps.progress.outputs.current }}"
+          COMPLETED="${{ steps.progress.outputs.completed }}"
+
+          echo "# Rustlings Progress" > README.md
+          echo "" >> README.md
+          echo "**Currently working on:** \`$CURRENT\`" >> README.md
+          echo "" >> README.md
+          echo "## Completed Exercises" >> README.md
+          echo "" >> README.md
+
+          echo "$COMPLETED" | while read -r name; do
+            [ -z "$name" ] && continue
+            echo "- \`$name\`" >> README.md
+          done
+
+      - name: Commit and Push if Changed
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@users.noreply.github.com"
+
+          git add README.md
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update README with Rustlings progress"
+            git push
+          fi
