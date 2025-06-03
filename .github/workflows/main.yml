@@ -19,56 +19,58 @@ jobs:
       - name: Extract Rustlings progress from .rustlings-state.txt
         id: progress
         run: |
-          # Ensure the state file exists
           if [ ! -f .rustlings-state.txt ]; then
             echo "Missing .rustlings-state.txt"
-            exit 1
+            echo "current=None" >> $GITHUB_OUTPUT
+            echo "completed=" >> $GITHUB_OUTPUT
+            exit 0
           fi
 
-          # Get the current exercise (line 3)
           CURRENT=$(sed -n '3p' .rustlings-state.txt)
-          echo "Current: $CURRENT"
+          COMPLETED=$(tail -n +5 .rustlings-state.txt | sort)
 
-          # Save completed exercises from line 5 onward
-          tail -n +5 .rustlings-state.txt | sort | uniq > .completed.txt
+          echo "Current exercise: $CURRENT"
+          echo "Completed exercises:"
+          echo "$COMPLETED"
 
-          # Find all .rs exercise files, preserve directory order
-          mapfile -d '' EXERCISE_PATHS < <(find exercises -type f -name '*.rs' -print0 | sort -z)
+          echo "current=$CURRENT" >> $GITHUB_OUTPUT
+          echo "completed<<EOF" >> $GITHUB_OUTPUT
+          echo "$COMPLETED" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
-          # Extract exercise names
-          EXERCISES=()
-          for path in "${EXERCISE_PATHS[@]}"; do
-            name=$(basename "$path" .rs)
-            EXERCISES+=("$name")
-          done
+      - name: Generate README
+        run: |
+          CURRENT="${{ steps.progress.outputs.current }}"
+          COMPLETED_LIST="${{ steps.progress.outputs.completed }}"
 
-          # Prepare README content
+          # Save completed to a temporary file for comparison
+          echo "$COMPLETED_LIST" > .completed_exercises.txt
+
+          # List all .rs exercise files, strip to just names (e.g., variables1.rs → variables1)
+          find exercises -type f -name '*.rs' | sed 's|.*/||' | sed 's|\.rs$||' | sort | uniq > .all_exercises.txt
+
+          # Determine which are not completed
+          grep -Fxv -f .completed_exercises.txt .all_exercises.txt > .not_completed.txt
+
           echo "# Rustlings Progress" > README.md
           echo "" >> README.md
           echo "**Currently working on:** \`$CURRENT\`" >> README.md
           echo "" >> README.md
 
-          TOTAL=${#EXERCISES[@]}
-          DONE=0
-          TABLE="| Exercise Name | Completion |\n|---------------|------------|"
-
-          for ex in "${EXERCISES[@]}"; do
-            if grep -Fxq "$ex" .completed.txt; then
-              STATUS="✅"
-              ((DONE++))
-            else
-              STATUS="❌"
-            fi
-            TABLE+="\n| \`$ex\` | $STATUS |"
-          done
-
-          PERCENT=$(awk "BEGIN { printf \"%.1f\", ($DONE/$TOTAL)*100 }")
-
-          echo "**$DONE of $TOTAL completed ($PERCENT%)**" >> README.md
+          echo "## ✅ Completed Exercises" >> README.md
           echo "" >> README.md
-          echo "## 📋 Exercise Completion Table" >> README.md
+          while read -r name; do
+            [ -z "$name" ] && continue
+            echo "- \`$name\`" >> README.md
+          done < .completed_exercises.txt
+
           echo "" >> README.md
-          echo -e "$TABLE" >> README.md
+          echo "## ❌ Incomplete Exercises" >> README.md
+          echo "" >> README.md
+          while read -r name; do
+            [ -z "$name" ] && continue
+            echo "- \`$name\`" >> README.md
+          done < .not_completed.txt
 
       - name: Commit and Push if Changed
         run: |
