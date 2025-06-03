@@ -19,55 +19,56 @@ jobs:
       - name: Extract Rustlings progress from .rustlings-state.txt
         id: progress
         run: |
+          # Ensure the state file exists
           if [ ! -f .rustlings-state.txt ]; then
             echo "Missing .rustlings-state.txt"
             exit 1
           fi
 
+          # Get the current exercise (line 3)
           CURRENT=$(sed -n '3p' .rustlings-state.txt)
           echo "Current: $CURRENT"
 
-          # Completed exercises from state file
+          # Save completed exercises from line 5 onward
           tail -n +5 .rustlings-state.txt | sort | uniq > .completed.txt
 
-          # Get all exercises in order by directory and file
+          # Find all .rs exercise files, preserve directory order
+          mapfile -d '' EXERCISE_PATHS < <(find exercises -type f -name '*.rs' -print0 | sort -z)
+
+          # Extract exercise names
           EXERCISES=()
-          while IFS= read -r -d '' file; do
-            name=$(basename "$file" .rs)
+          for path in "${EXERCISE_PATHS[@]}"; do
+            name=$(basename "$path" .rs)
             EXERCISES+=("$name")
-          done < <(find exercises -type f -name '*.rs' -print0 | sort -z)
+          done
 
-          # Calculate progress
-          TOTAL=${#EXERCISES[@]}
-          DONE=0
-
-          echo "# 🦀" > README.md
-          echo "## Rustlings Progress" >> README.md
+          # Prepare README content
+          echo "# Rustlings Progress" > README.md
           echo "" >> README.md
           echo "**Currently working on:** \`$CURRENT\`" >> README.md
           echo "" >> README.md
 
-          # First, mark completed and count
-          COMPLETION_TABLE=""
+          TOTAL=${#EXERCISES[@]}
+          DONE=0
+          TABLE="| Exercise Name | Completion |\n|---------------|------------|"
+
           for ex in "${EXERCISES[@]}"; do
             if grep -Fxq "$ex" .completed.txt; then
-              COMPLETION_TABLE+="| \`$ex\` | ✅ |\n"
+              STATUS="✅"
               ((DONE++))
             else
-              COMPLETION_TABLE+="| \`$ex\` | ❌ |\n"
+              STATUS="❌"
             fi
+            TABLE+="\n| \`$ex\` | $STATUS |"
           done
 
           PERCENT=$(awk "BEGIN { printf \"%.1f\", ($DONE/$TOTAL)*100 }")
 
           echo "**$DONE of $TOTAL completed ($PERCENT%)**" >> README.md
           echo "" >> README.md
-
           echo "## 📋 Exercise Completion Table" >> README.md
           echo "" >> README.md
-          echo "| Exercise Name | Completion |" >> README.md
-          echo "|---------------|------------|" >> README.md
-          echo -e "$COMPLETION_TABLE" >> README.md
+          echo -e "$TABLE" >> README.md
 
       - name: Commit and Push if Changed
         run: |
