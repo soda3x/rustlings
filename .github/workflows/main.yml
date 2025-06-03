@@ -18,8 +18,8 @@ jobs:
 
       - name: Extract Rustlings progress from .rustlings-state.txt
         id: progress
+        shell: bash
         run: |
-          bash -c '
 
           if [ ! -f .rustlings-state.txt ]; then
             echo "Missing .rustlings-state.txt"
@@ -73,7 +73,6 @@ jobs:
           echo "|---------------|------------|" >>README.md
 
           printf "%s\n" "${COMPLETION_TABLE[@]}" >>README.md
-          '
 
 
       - name: Commit and Push if Changed
