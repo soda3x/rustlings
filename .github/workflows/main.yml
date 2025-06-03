@@ -20,6 +20,7 @@ jobs:
         id: progress
         shell: bash
         run: |
+          set -euxo pipefail
 
           if [ ! -f .rustlings-state.txt ]; then
             echo "Missing .rustlings-state.txt"
