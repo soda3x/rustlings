@@ -63,3 +63,4 @@ jobs:
           else
             git commit -m "Update README with Rustlings progress"
             git push origin HEAD:main
+          fi
