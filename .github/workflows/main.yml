@@ -47,15 +47,18 @@ jobs:
           echo "" >> README.md
 
           # First, mark completed and count
-          COMPLETION_TABLE=""
+          COMPLETION_TABLE=()
+
           for ex in "${EXERCISES[@]}"; do
             if grep -Fxq "$ex" .completed.txt; then
-              COMPLETION_TABLE+="| \`$ex\` | ✅ |\n"
+              COMPLETION_TABLE+=("| \`$ex\` | ✅ |")
               ((DONE++))
             else
-              COMPLETION_TABLE+="| \`$ex\` | ❌ |\n"
+              COMPLETION_TABLE+=("| \`$ex\` | ❌ |")
             fi
           done
+
+          printf "%s\n" "${COMPLETION_TABLE[@]}" >> README.md
 
           PERCENT=$(awk "BEGIN { printf \"%.1f\", ($DONE/$TOTAL)*100 }")
 
