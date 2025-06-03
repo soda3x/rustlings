@@ -38,23 +38,39 @@ jobs:
           echo "$COMPLETED" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Update README
+      - name: Generate README
         run: |
           CURRENT="${{ steps.progress.outputs.current }}"
-          COMPLETED="${{ steps.progress.outputs.completed }}"
+          COMPLETED_LIST="${{ steps.progress.outputs.completed }}"
 
-          echo "# 🦀" > README.md
-          echo "## Rustlings Progress" >> README.md
+          # Save completed to a temporary file for comparison
+          echo "$COMPLETED_LIST" > .completed_exercises.txt
+
+          # List all .rs exercise files, strip to just names (e.g., variables1.rs → variables1)
+          find exercises -type f -name '*.rs' | sed 's|.*/||' | sed 's|\.rs$||' | sort | uniq > .all_exercises.txt
+
+          # Determine which are not completed
+          grep -Fxv -f .completed_exercises.txt .all_exercises.txt > .not_completed.txt
+
+          echo "# Rustlings Progress" > README.md
           echo "" >> README.md
-          echo "**Currently working on:** $CURRENT" >> README.md
-          echo "" >> README.md
-          echo "## Completed Exercises" >> README.md
+          echo "**Currently working on:** \`$CURRENT\`" >> README.md
           echo "" >> README.md
 
-          echo "$COMPLETED" | while read -r name; do
+          echo "## ✅ Completed Exercises" >> README.md
+          echo "" >> README.md
+          while read -r name; do
             [ -z "$name" ] && continue
-            echo "- $name ✅" >> README.md
-          done
+            echo "- \`$name\`" >> README.md
+          done < .completed_exercises.txt
+
+          echo "" >> README.md
+          echo "## ❌ Incomplete Exercises" >> README.md
+          echo "" >> README.md
+          while read -r name; do
+            [ -z "$name" ] && continue
+            echo "- \`$name\`" >> README.md
+          done < .not_completed.txt
 
       - name: Commit and Push if Changed
         run: |
