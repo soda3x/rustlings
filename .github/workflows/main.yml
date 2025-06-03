@@ -20,20 +20,23 @@ jobs:
         id: progress
         run: |
           if [ ! -f .rustlings-state.txt ]; then
-            echo "No .rustlings-state.txt found"
+            echo "Missing .rustlings-state.txt"
             echo "current=None" >> $GITHUB_OUTPUT
             echo "completed=" >> $GITHUB_OUTPUT
             exit 0
           fi
 
-          COMPLETED=$(grep -E '^[^:]+:true' .rustlings-state.txt | cut -d ':' -f1 | sort)
-          CURRENT=$(grep -E '^[^:]+:false' .rustlings-state.txt | cut -d ':' -f1 | head -n 1 || echo "All done!")
+          CURRENT=$(sed -n '3p' .rustlings-state.txt)
+          COMPLETED=$(tail -n +5 .rustlings-state.txt | sort)
 
+          echo "Current exercise: $CURRENT"
+          echo "Completed exercises:"
+          echo "$COMPLETED"
+
+          echo "current=$CURRENT" >> $GITHUB_OUTPUT
           echo "completed<<EOF" >> $GITHUB_OUTPUT
           echo "$COMPLETED" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-
-          echo "current=$CURRENT" >> $GITHUB_OUTPUT
 
       - name: Update README
         run: |
