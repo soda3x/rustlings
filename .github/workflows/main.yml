@@ -21,56 +21,52 @@ jobs:
         run: |
           if [ ! -f .rustlings-state.txt ]; then
             echo "Missing .rustlings-state.txt"
-            echo "current=None" >> $GITHUB_OUTPUT
-            echo "completed=" >> $GITHUB_OUTPUT
-            exit 0
+            exit 1
           fi
 
           CURRENT=$(sed -n '3p' .rustlings-state.txt)
-          COMPLETED=$(tail -n +5 .rustlings-state.txt | sort)
+          echo "Current: $CURRENT"
 
-          echo "Current exercise: $CURRENT"
-          echo "Completed exercises:"
-          echo "$COMPLETED"
+          # Completed exercises from state file
+          tail -n +5 .rustlings-state.txt | sort | uniq > .completed.txt
 
-          echo "current=$CURRENT" >> $GITHUB_OUTPUT
-          echo "completed<<EOF" >> $GITHUB_OUTPUT
-          echo "$COMPLETED" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          # Get all exercises in order by directory and file
+          EXERCISES=()
+          while IFS= read -r -d '' file; do
+            name=$(basename "$file" .rs)
+            EXERCISES+=("$name")
+          done < <(find exercises -type f -name '*.rs' -print0 | sort -z)
 
-      - name: Generate README
-        run: |
-          CURRENT="${{ steps.progress.outputs.current }}"
-          COMPLETED_LIST="${{ steps.progress.outputs.completed }}"
-
-          # Save completed to a temporary file for comparison
-          echo "$COMPLETED_LIST" > .completed_exercises.txt
-
-          # List all .rs exercise files, strip to just names (e.g., variables1.rs → variables1)
-          find exercises -type f -name '*.rs' | sed 's|.*/||' | sed 's|\.rs$||' | sort | uniq > .all_exercises.txt
-
-          # Determine which are not completed
-          grep -Fxv -f .completed_exercises.txt .all_exercises.txt > .not_completed.txt
+          # Calculate progress
+          TOTAL=${#EXERCISES[@]}
+          DONE=0
 
           echo "# Rustlings Progress" > README.md
           echo "" >> README.md
           echo "**Currently working on:** \`$CURRENT\`" >> README.md
           echo "" >> README.md
 
-          echo "## ✅ Completed Exercises" >> README.md
-          echo "" >> README.md
-          while read -r name; do
-            [ -z "$name" ] && continue
-            echo "- \`$name\`" >> README.md
-          done < .completed_exercises.txt
+          # First, mark completed and count
+          COMPLETION_TABLE=""
+          for ex in "${EXERCISES[@]}"; do
+            if grep -Fxq "$ex" .completed.txt; then
+              COMPLETION_TABLE+="| \`$ex\` | ✅ |\n"
+              ((DONE++))
+            else
+              COMPLETION_TABLE+="| \`$ex\` | ❌ |\n"
+            fi
+          done
 
+          PERCENT=$(awk "BEGIN { printf \"%.1f\", ($DONE/$TOTAL)*100 }")
+
+          echo "**$DONE of $TOTAL completed ($PERCENT%)**" >> README.md
           echo "" >> README.md
-          echo "## ❌ Incomplete Exercises" >> README.md
+
+          echo "## 📋 Exercise Completion Table" >> README.md
           echo "" >> README.md
-          while read -r name; do
-            [ -z "$name" ] && continue
-            echo "- \`$name\`" >> README.md
-          done < .not_completed.txt
+          echo "| Exercise Name | Completion |" >> README.md
+          echo "|---------------|------------|" >> README.md
+          echo -e "$COMPLETION_TABLE" >> README.md
 
       - name: Commit and Push if Changed
         run: |
