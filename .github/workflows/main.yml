@@ -28,7 +28,7 @@ jobs:
           echo "Current: $CURRENT"
 
           # Completed exercises from state file
-          tail -n +5 .rustlings-state.txt | sort | uniq > .completed.txt
+          tail -n +5 .rustlings-state.txt | sort | uniq >.completed.txt
 
           # Get all exercises in order by directory and file
           EXERCISES=()
@@ -40,11 +40,6 @@ jobs:
           # Calculate progress
           TOTAL=${#EXERCISES[@]}
           DONE=0
-
-          echo "# Rustlings Progress" > README.md
-          echo "" >> README.md
-          echo "**Currently working on:** \`$CURRENT\`" >> README.md
-          echo "" >> README.md
 
           # First, mark completed and count
           COMPLETION_TABLE=()
@@ -58,18 +53,25 @@ jobs:
             fi
           done
 
-          printf "%s\n" "${COMPLETION_TABLE[@]}" >> README.md
+          echo "# 🦀" >README.md
+          echo "" >>README.md
+          echo "## Rustlings Progress" >>README.md
+          echo "" >>README.md
+          echo "**Currently working on:** \`$CURRENT\`" >>README.md
+          echo "" >>README.md
 
           PERCENT=$(awk "BEGIN { printf \"%.1f\", ($DONE/$TOTAL)*100 }")
 
-          echo "**$DONE of $TOTAL completed ($PERCENT%)**" >> README.md
-          echo "" >> README.md
+          echo "**$DONE of $TOTAL completed ($PERCENT%)**" >>README.md
+          echo "" >>README.md
 
-          echo "## 📋 Exercise Completion Table" >> README.md
-          echo "" >> README.md
-          echo "| Exercise Name | Completion |" >> README.md
-          echo "|---------------|------------|" >> README.md
-          echo -e "$COMPLETION_TABLE" >> README.md
+          echo "## 📋 Exercise Completion Table" >>README.md
+          echo "" >>README.md
+          echo "| Exercise Name | Completion |" >>README.md
+          echo "|---------------|------------|" >>README.md
+
+          printf "%s\n" "${COMPLETION_TABLE[@]}" >>README.md
+
 
       - name: Commit and Push if Changed
         run: |
